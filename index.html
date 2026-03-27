@@ -1,0 +1,937 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>My Wallet</title>
+<link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;500;600;700;800&family=DM+Mono:wght@400;500&family=DM+Sans:wght@300;400;500&display=swap" rel="stylesheet">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.0/chart.umd.min.js"></script>
+<style>
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+:root{
+  --bg:#0a0a0a;--s1:#111;--s2:#181818;--s3:#222;
+  --border:#252525;--border2:#333;
+  --text:#f0f0f0;--dim:#666;--muted:#333;
+  --accent:#c8f564;--accent2:rgba(200,245,100,.14);--accent3:rgba(200,245,100,.07);
+  --red:#f56464;--red2:rgba(245,100,100,.12);
+  --green:#5cf5a0;--green2:rgba(92,245,160,.12);
+  --blue:#64b5f5;--orange:#f5a864;--purple:#b464f5;
+  --r:12px;--r2:8px;
+}
+body{font-family:'DM Sans',sans-serif;background:var(--bg);color:var(--text);height:100vh;overflow:hidden}
+.shell{display:grid;grid-template-columns:220px 1fr;height:100vh}
+
+/* SIDEBAR */
+.sidebar{background:var(--s1);border-right:1px solid var(--border);display:flex;flex-direction:column;overflow:hidden}
+.sidebar-head{padding:18px 16px 14px;border-bottom:1px solid var(--border)}
+.logo{display:flex;align-items:center;gap:10px;margin-bottom:14px}
+.logo-mark{width:28px;height:28px;background:var(--accent);border-radius:7px;display:flex;align-items:center;justify-content:center;font-family:'Syne',sans-serif;font-weight:800;font-size:12px;color:#0a0a0a}
+.logo-name{font-family:'Syne',sans-serif;font-weight:700;font-size:14px}
+.sidebar-total-label{font-size:10px;color:var(--dim);text-transform:uppercase;letter-spacing:1px;margin-bottom:3px}
+.sidebar-total{font-family:'DM Mono',monospace;font-size:20px;font-weight:500;color:var(--accent)}
+.sidebar-nav{padding:12px 10px;border-bottom:1px solid var(--border);display:flex;flex-direction:column;gap:2px}
+.nav-btn{display:flex;align-items:center;gap:9px;padding:8px 10px;border:none;background:none;border-radius:8px;color:var(--dim);font-family:'DM Sans',sans-serif;font-size:12.5px;cursor:pointer;width:100%;text-align:left;transition:all .15s}
+.nav-btn:hover{background:var(--s2);color:var(--text)}
+.nav-btn.active{background:var(--accent2);color:var(--accent)}
+.nav-btn svg{width:14px;height:14px;stroke-width:1.8;flex-shrink:0}
+.sidebar-wallets{flex:1;overflow-y:auto;padding:12px 10px;display:flex;flex-direction:column;gap:7px}
+.sidebar-wallets::-webkit-scrollbar{width:3px}
+.sidebar-wallets::-webkit-scrollbar-thumb{background:var(--border);border-radius:2px}
+.wallet-card{background:var(--s2);border:1px solid var(--border);border-radius:var(--r2);padding:11px 12px;cursor:pointer;transition:all .15s}
+.wallet-card:hover,.wallet-card.active{border-color:var(--accent)}
+.wallet-card.active{background:var(--accent3)}
+.wc-top{display:flex;align-items:center;gap:8px;margin-bottom:5px}
+.wc-icon{width:26px;height:26px;border-radius:6px;display:flex;align-items:center;justify-content:center;font-size:12px;flex-shrink:0}
+.wc-name{font-size:12px;font-weight:500;flex:1;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.wc-type{font-size:10px;color:var(--dim)}
+.wc-bal{font-family:'DM Mono',monospace;font-size:14px;font-weight:500}
+.add-wallet-btn{background:none;border:1px dashed var(--border);border-radius:var(--r2);padding:9px;width:100%;cursor:pointer;color:var(--dim);font-size:12px;font-family:'DM Sans',sans-serif;display:flex;align-items:center;justify-content:center;gap:5px;transition:all .15s}
+.add-wallet-btn:hover{border-color:var(--accent);color:var(--accent)}
+.sidebar-foot{padding:12px 10px;border-top:1px solid var(--border)}
+.reset-btn{display:flex;align-items:center;gap:8px;padding:8px 10px;border:none;background:none;border-radius:8px;color:var(--dim);font-family:'DM Sans',sans-serif;font-size:12px;cursor:pointer;width:100%;transition:all .15s}
+.reset-btn:hover{color:var(--red);background:var(--red2)}
+.reset-btn svg{width:13px;height:13px;stroke-width:1.8}
+
+/* MAIN */
+.main{display:flex;flex-direction:column;overflow:hidden}
+.topbar{padding:14px 24px;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between;flex-shrink:0}
+.topbar-title{font-family:'Syne',sans-serif;font-size:15px;font-weight:700}
+.topbar-date{font-family:'DM Mono',monospace;font-size:11px;color:var(--dim)}
+.panel{display:none;flex:1;overflow:hidden}
+.panel.active{display:flex;flex-direction:column}
+
+/* DASHBOARD */
+.dash-scroll{flex:1;overflow-y:auto;padding:20px 24px;display:flex;flex-direction:column;gap:16px}
+.dash-scroll::-webkit-scrollbar{width:4px}
+.dash-scroll::-webkit-scrollbar-thumb{background:var(--border);border-radius:2px}
+.kpi-row{display:grid;grid-template-columns:repeat(3,1fr);gap:12px}
+.kpi{background:var(--s1);border:1px solid var(--border);border-radius:var(--r);padding:16px}
+.kpi.accent{background:var(--accent3);border-color:rgba(200,245,100,.25)}
+.kpi-label{font-size:10px;color:var(--dim);text-transform:uppercase;letter-spacing:1px;margin-bottom:6px}
+.kpi-val{font-family:'DM Mono',monospace;font-size:21px;font-weight:500}
+.kpi-val.green{color:var(--green)}
+.kpi-val.red{color:var(--red)}
+.kpi-val.accent{color:var(--accent)}
+.kpi-sub{font-size:10.5px;color:var(--dim);margin-top:3px}
+.grid-2{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+.card{background:var(--s1);border:1px solid var(--border);border-radius:var(--r);padding:16px}
+.card-head{display:flex;align-items:center;justify-content:space-between;margin-bottom:12px}
+.card-head h3{font-family:'Syne',sans-serif;font-size:12px;font-weight:600}
+.card-head span{font-size:11px;color:var(--dim)}
+.chart-wrap{position:relative;height:160px}
+.cat-list{display:flex;flex-direction:column;gap:7px;margin-top:2px}
+.cat-row{display:flex;align-items:center;gap:8px}
+.cat-dot{width:7px;height:7px;border-radius:50%;flex-shrink:0}
+.cat-name{font-size:11.5px;flex:1}
+.cat-bar-wrap{flex:2;height:3px;background:var(--s3);border-radius:2px;overflow:hidden}
+.cat-bar{height:100%;border-radius:2px;transition:width .5s}
+.cat-pct{font-family:'DM Mono',monospace;font-size:10.5px;color:var(--dim);min-width:28px;text-align:right}
+.tx-list{display:flex;flex-direction:column;gap:7px}
+.tx-item{display:flex;align-items:center;gap:9px;padding:9px 10px;background:var(--s2);border:1px solid var(--border);border-radius:8px;transition:border-color .15s}
+.tx-item:hover{border-color:var(--border2)}
+.tx-ico{width:28px;height:28px;border-radius:7px;display:flex;align-items:center;justify-content:center;font-size:12px;flex-shrink:0}
+.tx-info{flex:1;min-width:0}
+.tx-desc{font-size:12px;font-weight:500;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.tx-meta{font-size:10px;color:var(--dim);margin-top:1px;font-family:'DM Mono',monospace}
+.tx-amt{font-family:'DM Mono',monospace;font-size:12px;font-weight:500;white-space:nowrap}
+.health-ring{display:flex;align-items:center;justify-content:center;padding:10px 0 6px}
+.health-svg{width:110px;height:110px}
+
+/* BUDGET */
+.budget-scroll{flex:1;overflow-y:auto;padding:20px 24px;display:flex;flex-direction:column;gap:14px}
+.bmode-row{display:flex;gap:4px;background:var(--s2);border:1px solid var(--border);border-radius:8px;padding:4px;width:fit-content}
+.bm-btn{padding:6px 14px;border:none;background:none;border-radius:5px;font-family:'DM Sans',sans-serif;font-size:12px;color:var(--dim);cursor:pointer;transition:all .15s}
+.bm-btn.active{background:var(--s3);color:var(--text)}
+.budget-cat-item{background:var(--s1);border:1px solid var(--border);border-radius:var(--r);padding:13px}
+.bc-top{display:flex;align-items:center;justify-content:space-between;margin-bottom:9px}
+.bc-left{display:flex;align-items:center;gap:8px}
+.bc-icon{font-size:15px}.bc-name{font-size:12.5px;font-weight:500}
+.bc-amounts{text-align:right}
+.bc-spent{font-family:'DM Mono',monospace;font-size:12.5px;font-weight:500}
+.bc-limit{font-size:10.5px;color:var(--dim);margin-top:1px}
+.bc-progress{height:5px;background:var(--s3);border-radius:3px;overflow:hidden}
+.bc-bar{height:100%;border-radius:3px;transition:width .5s}
+.bc-pct{font-size:10px;color:var(--dim);margin-top:4px;text-align:right}
+.budget-2030{display:grid;grid-template-columns:repeat(3,1fr);gap:10px}
+.b2030-card{background:var(--s1);border:1px solid var(--border);border-radius:var(--r);padding:13px}
+.b2030-pct{font-family:'DM Mono',monospace;font-size:22px;font-weight:500;margin-bottom:3px}
+.b2030-label{font-size:10.5px;color:var(--dim);margin-bottom:10px}
+.b2030-prog{height:5px;background:var(--s3);border-radius:3px;overflow:hidden;margin-bottom:5px}
+.b2030-bar{height:100%;border-radius:3px}
+.b2030-info{font-size:10.5px;color:var(--dim);font-family:'DM Mono',monospace}
+
+/* GOALS */
+.goals-scroll{flex:1;overflow-y:auto;padding:20px 24px;display:flex;flex-direction:column;gap:12px}
+.goal-card{background:var(--s1);border:1px solid var(--border);border-radius:var(--r);padding:14px}
+.goal-top{display:flex;align-items:center;gap:9px;margin-bottom:10px}
+.goal-emoji{font-size:18px}
+.goal-info{flex:1}
+.goal-name{font-size:12.5px;font-weight:600}
+.goal-deadline{font-size:10.5px;color:var(--dim);margin-top:1px;font-family:'DM Mono',monospace}
+.goal-pct-badge{font-family:'DM Mono',monospace;font-size:12px;font-weight:500}
+.goal-prog{height:6px;background:var(--s3);border-radius:3px;overflow:hidden;margin-bottom:8px}
+.goal-bar{height:100%;border-radius:3px;transition:width .5s}
+.goal-amounts{display:flex;justify-content:space-between;font-size:10.5px;color:var(--dim);font-family:'DM Mono',monospace}
+.goal-amounts strong{color:var(--text);font-weight:500}
+.add-goal-btn{background:none;border:1px dashed var(--border);border-radius:var(--r);padding:14px;width:100%;cursor:pointer;color:var(--dim);font-size:12.5px;font-family:'DM Sans',sans-serif;display:flex;align-items:center;justify-content:center;gap:7px;transition:all .15s}
+.add-goal-btn:hover{border-color:var(--accent);color:var(--accent)}
+
+/* MODAL */
+.modal-overlay{display:none;position:fixed;inset:0;background:rgba(0,0,0,.75);z-index:150;align-items:center;justify-content:center}
+.modal-overlay.show{display:flex}
+.modal{background:var(--s1);border:1px solid var(--border);border-radius:14px;padding:22px;width:350px;display:flex;flex-direction:column;gap:13px}
+.modal h3{font-family:'Syne',sans-serif;font-size:14px;font-weight:700}
+.form-group{display:flex;flex-direction:column;gap:4px}
+.form-label{font-size:10.5px;color:var(--dim);text-transform:uppercase;letter-spacing:.8px}
+.form-input{background:var(--s2);border:1px solid var(--border);border-radius:7px;padding:8px 11px;color:var(--text);font-family:'DM Sans',sans-serif;font-size:13px;outline:none;transition:border-color .15s}
+.form-input:focus{border-color:var(--border2)}
+.form-row{display:grid;grid-template-columns:1fr 1fr;gap:9px}
+select.form-input option{background:var(--s1)}
+.color-pick{display:flex;gap:7px;flex-wrap:wrap}
+.color-opt{width:22px;height:22px;border-radius:50%;cursor:pointer;border:2px solid transparent;transition:border-color .15s}
+.color-opt.selected{border-color:var(--text)}
+.modal-btns{display:flex;gap:7px;justify-content:flex-end}
+.btn-ghost{background:none;border:1px solid var(--border);color:var(--dim);font-family:'DM Sans',sans-serif;font-size:12.5px;padding:7px 14px;border-radius:7px;cursor:pointer;transition:all .15s}
+.btn-ghost:hover{border-color:var(--border2);color:var(--text)}
+.btn-primary{background:var(--accent);border:none;color:#0a0a0a;font-family:'DM Sans',sans-serif;font-size:12.5px;font-weight:600;padding:7px 14px;border-radius:7px;cursor:pointer;transition:opacity .15s}
+.btn-primary:hover{opacity:.85}
+
+/* FLOATING CHAT */
+.chat-fab{position:fixed;bottom:24px;right:24px;z-index:200}
+.chat-fab-btn{width:52px;height:52px;background:var(--accent);border:none;border-radius:50%;cursor:pointer;display:flex;align-items:center;justify-content:center;box-shadow:0 4px 24px rgba(200,245,100,.3);transition:transform .2s,opacity .15s}
+.chat-fab-btn:hover{transform:scale(1.08)}
+.chat-fab-btn:active{transform:scale(.95)}
+.chat-fab-btn svg{width:22px;height:22px;stroke-width:2;color:#0a0a0a}
+
+.chat-popup{position:fixed;bottom:88px;right:24px;z-index:199;width:360px;height:480px;background:var(--s1);border:1px solid var(--border);border-radius:16px;display:flex;flex-direction:column;overflow:hidden;box-shadow:0 8px 40px rgba(0,0,0,.5);opacity:0;pointer-events:none;transform:translateY(12px) scale(.97);transition:all .22s cubic-bezier(.4,0,.2,1)}
+.chat-popup.open{opacity:1;pointer-events:all;transform:translateY(0) scale(1)}
+.chat-popup-head{padding:14px 16px 12px;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between;flex-shrink:0}
+.chat-popup-title{font-family:'Syne',sans-serif;font-size:13px;font-weight:700}
+.chat-popup-sub{font-size:10.5px;color:var(--dim);margin-top:1px}
+.chat-close-btn{width:26px;height:26px;background:var(--s2);border:none;border-radius:6px;cursor:pointer;display:flex;align-items:center;justify-content:center;color:var(--dim);transition:all .15s}
+.chat-close-btn:hover{background:var(--s3);color:var(--text)}
+.chat-close-btn svg{width:13px;height:13px;stroke-width:2}
+.chat-area{flex:1;overflow-y:auto;padding:14px;display:flex;flex-direction:column;gap:10px}
+.chat-area::-webkit-scrollbar{width:3px}
+.chat-area::-webkit-scrollbar-thumb{background:var(--border);border-radius:2px}
+.msg{display:flex;gap:8px;animation:fadeUp .18s ease}
+.msg.user{align-self:flex-end;flex-direction:row-reverse}
+@keyframes fadeUp{from{opacity:0;transform:translateY(5px)}to{opacity:1;transform:translateY(0)}}
+.msg-av{width:22px;height:22px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:10px;flex-shrink:0;margin-top:2px}
+.msg.ai .msg-av{background:var(--accent2);color:var(--accent)}
+.msg.user .msg-av{background:var(--s3);color:var(--dim)}
+.msg-bub{background:var(--s2);border:1px solid var(--border);border-radius:9px;padding:8px 11px;font-size:12.5px;line-height:1.6;max-width:260px}
+.msg.user .msg-bub{background:var(--s3)}
+.tx-pill{display:inline-flex;align-items:center;gap:5px;padding:4px 9px;border-radius:5px;font-family:'DM Mono',monospace;font-size:10.5px;margin-top:6px;border:1px solid}
+.tx-pill.income{background:var(--green2);border-color:rgba(92,245,160,.2);color:var(--green)}
+.tx-pill.expense{background:var(--red2);border-color:rgba(245,100,100,.2);color:var(--red)}
+.tx-pill.savings{background:var(--accent2);border-color:rgba(200,245,100,.2);color:var(--accent)}
+.typing-dot{width:4px;height:4px;background:var(--dim);border-radius:50%;animation:bounce 1.2s infinite;display:inline-block;margin:0 2px}
+.typing-dot:nth-child(2){animation-delay:.2s}.typing-dot:nth-child(3){animation-delay:.4s}
+@keyframes bounce{0%,60%,100%{transform:translateY(0)}30%{transform:translateY(-4px)}}
+.chat-chips{padding:0 14px 8px;display:flex;flex-wrap:wrap;gap:5px;flex-shrink:0}
+.chip{background:var(--s2);border:1px solid var(--border);border-radius:20px;padding:3px 9px;font-size:11px;color:var(--dim);cursor:pointer;transition:all .15s;white-space:nowrap}
+.chip:hover{border-color:var(--accent);color:var(--accent)}
+.chat-input-area{padding:10px 14px 14px;border-top:1px solid var(--border);display:flex;gap:8px;align-items:flex-end;flex-shrink:0}
+.chat-input-wrap{flex:1;background:var(--s2);border:1px solid var(--border);border-radius:9px;padding:7px 10px;transition:border-color .2s}
+.chat-input-wrap:focus-within{border-color:var(--border2)}
+#chatInput{width:100%;background:transparent;border:none;outline:none;color:var(--text);font-family:'DM Sans',sans-serif;font-size:12.5px;resize:none;max-height:80px;overflow-y:auto;line-height:1.5}
+#chatInput::placeholder{color:var(--muted)}
+.send-btn{background:var(--accent);border:none;border-radius:8px;width:32px;height:32px;cursor:pointer;display:flex;align-items:center;justify-content:center;color:#0a0a0a;flex-shrink:0;transition:opacity .15s,transform .1s}
+.send-btn:hover{opacity:.85}.send-btn:active{transform:scale(.95)}.send-btn:disabled{opacity:.3;cursor:not-allowed}
+.send-btn svg{width:13px;height:13px;stroke-width:2.5}
+
+/* MISC */
+.empty{text-align:center;padding:28px 14px;color:var(--dim);font-size:12.5px;line-height:1.7}
+.notif{position:fixed;bottom:90px;right:24px;background:var(--s2);border:1px solid var(--border);border-radius:10px;padding:10px 14px;font-size:12.5px;z-index:300;animation:notifIn .2s ease;display:flex;align-items:center;gap:7px}
+@keyframes notifIn{from{opacity:0;transform:translateY(6px)}to{opacity:1;transform:translateY(0)}}
+.notif-dot{width:6px;height:6px;border-radius:50%;flex-shrink:0}
+::-webkit-scrollbar{width:4px}::-webkit-scrollbar-track{background:transparent}::-webkit-scrollbar-thumb{background:var(--border);border-radius:2px}
+</style>
+</head>
+<body>
+<div class="shell">
+
+  <!-- SIDEBAR -->
+  <aside class="sidebar">
+    <div class="sidebar-head">
+      <div class="logo">
+        <div class="logo-mark">💳</div>
+        <div class="logo-name">My Wallet</div>
+      </div>
+      <div class="sidebar-total-label">Total Saldo</div>
+      <div class="sidebar-total" id="sidebarTotal">Rp 0</div>
+    </div>
+    <div class="sidebar-nav">
+      <button class="nav-btn active" id="nav-dash" onclick="setTab('dash')">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/></svg>
+        Dashboard
+      </button>
+      <button class="nav-btn" id="nav-budget" onclick="setTab('budget')">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M12 2v20M17 5H9.5a3.5 3.5 0 000 7h5a3.5 3.5 0 010 7H6"/></svg>
+        Budget
+      </button>
+      <button class="nav-btn" id="nav-goals" onclick="setTab('goals')">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><circle cx="12" cy="12" r="10"/><circle cx="12" cy="12" r="6"/><circle cx="12" cy="12" r="2"/></svg>
+        Target Tabungan
+      </button>
+    </div>
+    <div style="padding:10px 10px 4px;font-size:10px;color:var(--dim);text-transform:uppercase;letter-spacing:1px">Dompet Saya</div>
+    <div class="sidebar-wallets" id="walletList"></div>
+    <div class="sidebar-foot">
+      <button class="reset-btn" onclick="confirmReset()">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><polyline points="1 4 1 10 7 10"/><path d="M3.51 15a9 9 0 102.13-9.36L1 10"/></svg>
+        Reset Data
+      </button>
+    </div>
+  </aside>
+
+  <!-- MAIN -->
+  <main class="main">
+    <div class="topbar">
+      <div class="topbar-title" id="topbarTitle">Dashboard</div>
+      <div class="topbar-date" id="topbarDate"></div>
+    </div>
+
+    <!-- DASHBOARD -->
+    <div class="panel active" id="panel-dash">
+      <div class="dash-scroll">
+        <div class="kpi-row">
+          <div class="kpi accent">
+            <div class="kpi-label" style="color:rgba(200,245,100,.6)">Total Sisa Saldo</div>
+            <div class="kpi-val accent" id="kpiBalance">Rp 0</div>
+            <div class="kpi-sub">dari semua dompet</div>
+          </div>
+          <div class="kpi">
+            <div class="kpi-label">Pemasukan Bulan Ini</div>
+            <div class="kpi-val green" id="kpiIncome">Rp 0</div>
+            <div class="kpi-sub" id="kpiIncomeSub">0 transaksi bulan ini</div>
+          </div>
+          <div class="kpi">
+            <div class="kpi-label">Pengeluaran Bulan Ini</div>
+            <div class="kpi-val red" id="kpiExpense">Rp 0</div>
+            <div class="kpi-sub" id="kpiExpenseSub">0 transaksi bulan ini</div>
+          </div>
+        </div>
+        <div class="grid-2">
+          <div class="card">
+            <div class="card-head"><h3>Pengeluaran Bulanan</h3></div>
+            <div class="chart-wrap"><canvas id="lineChart"></canvas></div>
+          </div>
+          <div class="card">
+            <div class="card-head"><h3>Per Kategori</h3></div>
+            <div class="chart-wrap" style="height:130px"><canvas id="doughnutChart"></canvas></div>
+            <div class="cat-list" id="catBreakdown" style="margin-top:10px"></div>
+          </div>
+        </div>
+        <div class="grid-2">
+          <div class="card">
+            <div class="card-head"><h3>Health Score</h3><span id="healthLabel">—</span></div>
+            <div class="health-ring">
+              <svg class="health-svg" viewBox="0 0 120 120">
+                <circle cx="60" cy="60" r="50" fill="none" stroke="var(--s3)" stroke-width="10"/>
+                <circle id="healthArc" cx="60" cy="60" r="50" fill="none" stroke="var(--accent)" stroke-width="10"
+                  stroke-linecap="round" stroke-dasharray="314" stroke-dashoffset="314"
+                  transform="rotate(-90 60 60)" style="transition:stroke-dashoffset 1s ease"/>
+                <text x="60" y="58" text-anchor="middle" dominant-baseline="middle" fill="var(--text)" font-family="DM Mono" font-size="22" font-weight="500" id="healthScore">0</text>
+                <text x="60" y="76" text-anchor="middle" dominant-baseline="middle" fill="var(--dim)" font-family="DM Sans" font-size="10">/100</text>
+              </svg>
+            </div>
+            <div style="font-size:11.5px;color:var(--dim);text-align:center" id="healthDesc">Tambah transaksi untuk lihat skor.</div>
+          </div>
+          <div class="card">
+            <div class="card-head"><h3>Riwayat Terbaru</h3></div>
+            <div class="tx-list" id="recentTx"></div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- BUDGET -->
+    <div class="panel" id="panel-budget">
+      <div class="budget-scroll">
+        <div style="display:flex;align-items:center;justify-content:space-between">
+          <div class="bmode-row">
+            <button class="bm-btn active" id="bmFixed" onclick="setBudgetMode('fixed')">Per Kategori</button>
+            <button class="bm-btn" id="bm5030" onclick="setBudgetMode('5030')">50/30/20</button>
+          </div>
+          <button class="btn-ghost" onclick="openBudgetEdit()">+ Set Budget</button>
+        </div>
+        <div id="budgetContent"></div>
+      </div>
+    </div>
+
+    <!-- GOALS -->
+    <div class="panel" id="panel-goals">
+      <div class="goals-scroll">
+        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:2px">
+          <div style="font-family:'Syne',sans-serif;font-size:13px;font-weight:700">Target Tabungan</div>
+          <button class="btn-ghost" onclick="openAddGoal()">+ Tambah Target</button>
+        </div>
+        <div id="goalsList"></div>
+      </div>
+    </div>
+  </main>
+</div>
+
+<!-- FLOATING CHAT BUTTON -->
+<div class="chat-fab">
+  <button class="chat-fab-btn" onclick="toggleChat()" id="chatFabBtn">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M21 15a2 2 0 01-2 2H7l-4 4V5a2 2 0 012-2h14a2 2 0 012 2z"/></svg>
+  </button>
+</div>
+
+<!-- CHAT POPUP -->
+<div class="chat-popup" id="chatPopup">
+  <div class="chat-popup-head">
+    <div>
+      <div class="chat-popup-title">✦ Catat Transaksi</div>
+      <div class="chat-popup-sub">Ketik nominal &amp; keterangan</div>
+    </div>
+    <button class="chat-close-btn" onclick="toggleChat()">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+    </button>
+  </div>
+  <div class="chat-area" id="chatArea"></div>
+  <div class="chat-chips">
+    <div class="chip" onclick="useChip(this)">Beli makan 35rb</div>
+    <div class="chip" onclick="useChip(this)">Gajian 5 juta</div>
+    <div class="chip" onclick="useChip(this)">Bayar listrik 200rb</div>
+    <div class="chip" onclick="useChip(this)">Nabung 300rb</div>
+  </div>
+  <div class="chat-input-area">
+    <div class="chat-input-wrap">
+      <textarea id="chatInput" placeholder="Contoh: Beli makan 35rb..." rows="1"
+        onkeydown="handleKey(event)" oninput="resizeTA(this)"></textarea>
+    </div>
+    <button class="send-btn" id="sendBtn" onclick="sendMsg()">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/></svg>
+    </button>
+  </div>
+</div>
+
+<!-- WALLET MODAL -->
+<div class="modal-overlay" id="walletModal">
+  <div class="modal">
+    <h3>Tambah Dompet</h3>
+    <div class="form-group">
+      <div class="form-label">Nama</div>
+      <input class="form-input" id="wName" placeholder="BCA, GoPay, Cash...">
+    </div>
+    <div class="form-row">
+      <div class="form-group">
+        <div class="form-label">Tipe</div>
+        <select class="form-input" id="wType">
+          <option value="bank">Bank</option>
+          <option value="ewallet">E-Wallet</option>
+          <option value="cash">Cash</option>
+          <option value="credit">Kartu Kredit</option>
+          <option value="paylater">PayLater</option>
+        </select>
+      </div>
+      <div class="form-group">
+        <div class="form-label">Saldo Awal</div>
+        <input class="form-input" id="wBalance" type="number" placeholder="0">
+      </div>
+    </div>
+    <div class="form-group">
+      <div class="form-label">Warna</div>
+      <div class="color-pick">
+        <div class="color-opt selected" style="background:#c8f564" data-color="#c8f564" onclick="pickColor(this)"></div>
+        <div class="color-opt" style="background:#5cf5a0" data-color="#5cf5a0" onclick="pickColor(this)"></div>
+        <div class="color-opt" style="background:#64b5f5" data-color="#64b5f5" onclick="pickColor(this)"></div>
+        <div class="color-opt" style="background:#f56464" data-color="#f56464" onclick="pickColor(this)"></div>
+        <div class="color-opt" style="background:#f5a864" data-color="#f5a864" onclick="pickColor(this)"></div>
+        <div class="color-opt" style="background:#b464f5" data-color="#b464f5" onclick="pickColor(this)"></div>
+      </div>
+    </div>
+    <div class="modal-btns">
+      <button class="btn-ghost" onclick="closeModal('walletModal')">Batal</button>
+      <button class="btn-primary" onclick="saveWallet()">Simpan</button>
+    </div>
+  </div>
+</div>
+
+<!-- GOAL MODAL -->
+<div class="modal-overlay" id="goalModal">
+  <div class="modal">
+    <h3>🎯 Tambah Target</h3>
+    <div class="form-row">
+      <div class="form-group">
+        <div class="form-label">Nama Target</div>
+        <input class="form-input" id="gName" placeholder="Motor, Laptop...">
+      </div>
+      <div class="form-group">
+        <div class="form-label">Emoji</div>
+        <input class="form-input" id="gEmoji" placeholder="🎯" maxlength="2">
+      </div>
+    </div>
+    <div class="form-row">
+      <div class="form-group">
+        <div class="form-label">Target (Rp)</div>
+        <input class="form-input" id="gTarget" type="number" placeholder="5000000">
+      </div>
+      <div class="form-group">
+        <div class="form-label">Sudah Ada (Rp)</div>
+        <input class="form-input" id="gCurrent" type="number" placeholder="0">
+      </div>
+    </div>
+    <div class="form-group">
+      <div class="form-label">Deadline</div>
+      <input class="form-input" id="gDeadline" type="date">
+    </div>
+    <div class="modal-btns">
+      <button class="btn-ghost" onclick="closeModal('goalModal')">Batal</button>
+      <button class="btn-primary" onclick="saveGoal()">Simpan</button>
+    </div>
+  </div>
+</div>
+
+<!-- BUDGET MODAL -->
+<div class="modal-overlay" id="budgetModal">
+  <div class="modal">
+    <h3>Set Budget Kategori</h3>
+    <div id="budgetModalContent" style="display:flex;flex-direction:column;gap:10px"></div>
+    <div class="modal-btns">
+      <button class="btn-ghost" onclick="closeModal('budgetModal')">Batal</button>
+      <button class="btn-primary" onclick="saveBudget()">Simpan</button>
+    </div>
+  </div>
+</div>
+
+<script>
+// ─── STATE ───────────────────────────────────────────────────────────────────
+const STORAGE_KEY = 'dompetpro_v2';
+let S = loadState();
+
+function defaultState() {
+  return { wallets:[], activeWallet:null, transactions:[], goals:[], budgets:{}, budgetMode:'fixed', selectedColor:'#c8f564' };
+}
+function loadState() {
+  try { return JSON.parse(localStorage.getItem(STORAGE_KEY)) || defaultState(); }
+  catch { return defaultState(); }
+}
+function save() { localStorage.setItem(STORAGE_KEY, JSON.stringify(S)); }
+
+// ─── UTILS ───────────────────────────────────────────────────────────────────
+function fmt(n) {
+  n = Math.round(n);
+  if (Math.abs(n) >= 1e9) return 'Rp '+(n/1e9).toFixed(1)+'M';
+  if (Math.abs(n) >= 1e6) return 'Rp '+(n/1e6).toFixed(1)+'jt';
+  return 'Rp '+Math.abs(n).toLocaleString('id-ID');
+}
+function nowStr() { return new Date().toLocaleTimeString('id-ID',{hour:'2-digit',minute:'2-digit'}); }
+function todayISO() { return new Date().toISOString().slice(0,10); }
+function uid() { return Math.random().toString(36).slice(2); }
+function esc(s) { return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
+function closeModal(id) { document.getElementById(id).classList.remove('show'); }
+
+const CAT_CONFIG = {
+  makan:        { label:'Makan & Minum',  icon:'🍜', color:'#f5a864' },
+  transport:    { label:'Transport',       icon:'🚗', color:'#64b5f5' },
+  belanja:      { label:'Belanja',         icon:'🛍️', color:'#b464f5' },
+  entertainment:{ label:'Entertainment',   icon:'🎮', color:'#f56464' },
+  tagihan:      { label:'Tagihan',         icon:'📄', color:'#5cf5a0' },
+  lainnya:      { label:'Lainnya',         icon:'📦', color:'#888'    },
+};
+const WALLET_TYPE_EMOJI = { bank:'🏦', ewallet:'💳', cash:'💵', credit:'💰', paylater:'⚡' };
+
+// ─── DATE ────────────────────────────────────────────────────────────────────
+document.getElementById('topbarDate').textContent =
+  new Date().toLocaleDateString('id-ID',{weekday:'long',day:'numeric',month:'long',year:'numeric'});
+
+// ─── NAVIGATION ──────────────────────────────────────────────────────────────
+const TAB_TITLES = { dash:'Dashboard', budget:'Budget', goals:'Target Tabungan' };
+let currentTab = 'dash';
+
+function setTab(tab) {
+  currentTab = tab;
+  document.querySelectorAll('.panel').forEach(p => p.classList.remove('active'));
+  document.querySelectorAll('.nav-btn').forEach(b => b.classList.remove('active'));
+  document.getElementById('panel-'+tab).classList.add('active');
+  document.getElementById('nav-'+tab).classList.add('active');
+  document.getElementById('topbarTitle').textContent = TAB_TITLES[tab]||tab;
+  if (tab==='dash') renderDash();
+  if (tab==='budget') renderBudget();
+  if (tab==='goals') renderGoals();
+}
+
+// ─── RENDER ALL — dipanggil setiap kali ada perubahan data ───────────────────
+function renderAll() {
+  renderWallets();
+  if (currentTab==='dash') renderDash();
+  else if (currentTab==='budget') renderBudget();
+  else if (currentTab==='goals') renderGoals();
+}
+
+// ─── WALLETS ─────────────────────────────────────────────────────────────────
+function renderWallets() {
+  const total = S.wallets.reduce((s,w)=>s+w.balance,0);
+  document.getElementById('sidebarTotal').textContent = fmt(total);
+
+  document.getElementById('walletList').innerHTML = S.wallets.map(w=>`
+    <div class="wallet-card ${w.id===S.activeWallet?'active':''}" onclick="selectWallet('${w.id}')">
+      <div class="wc-top">
+        <div class="wc-icon" style="background:${w.color}22;color:${w.color}">${WALLET_TYPE_EMOJI[w.type]||'💳'}</div>
+        <div style="flex:1;min-width:0">
+          <div class="wc-name">${esc(w.name)}</div>
+          <div class="wc-type">${w.type.charAt(0).toUpperCase()+w.type.slice(1)}</div>
+        </div>
+      </div>
+      <div class="wc-bal" style="color:${w.color}">${fmt(w.balance)}</div>
+    </div>`).join('')+`
+    <button class="add-wallet-btn" onclick="openWalletModal()">
+      <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+      Tambah Dompet
+    </button>`;
+}
+
+function selectWallet(id) { S.activeWallet=id; save(); renderWallets(); }
+
+function openWalletModal() { S.selectedColor='#c8f564'; document.getElementById('walletModal').classList.add('show'); }
+function pickColor(el) {
+  document.querySelectorAll('.color-opt').forEach(e=>e.classList.remove('selected'));
+  el.classList.add('selected'); S.selectedColor=el.dataset.color;
+}
+function saveWallet() {
+  const name=document.getElementById('wName').value.trim();
+  const type=document.getElementById('wType').value;
+  const bal=parseFloat(document.getElementById('wBalance').value)||0;
+  if (!name) return;
+  const newId=uid();
+  S.wallets.push({id:newId,name,type,balance:bal,color:S.selectedColor});
+  if (!S.activeWallet) S.activeWallet=newId;
+  // Saldo awal → transaksi income agar terhitung di dashboard
+  if (bal>0) {
+    S.transactions.push({id:uid(),type:'income',amount:bal,description:'Saldo awal — '+name,category:'lainnya',walletId:newId,date:todayISO(),time:nowStr()});
+  }
+  save();
+  document.getElementById('wName').value='';
+  document.getElementById('wBalance').value='';
+  closeModal('walletModal');
+  renderAll();
+}
+
+// ─── TRANSACTIONS ─────────────────────────────────────────────────────────────
+function addTx(type, amount, description, category, walletId) {
+  const wId = walletId || S.activeWallet;
+  const tx = {id:uid(),type,amount,description,category:category||'lainnya',walletId:wId,date:todayISO(),time:nowStr()};
+  S.transactions.push(tx);
+  // Update saldo dompet
+  const w = S.wallets.find(w=>w.id===wId);
+  if (w) {
+    if (type==='income')  w.balance += amount;
+    else                   w.balance -= amount;  // expense & savings sama-sama kurangi saldo
+  }
+  // Update goal jika savings
+  if (type==='savings' && S.goals.length) {
+    const g = S.goals[S.goals.length-1];
+    g.current = Math.min(g.current+amount, g.target);
+  }
+  save();
+  renderAll(); // ← SELALU update semua UI setelah transaksi
+  return tx;
+}
+
+// ─── DASHBOARD ────────────────────────────────────────────────────────────────
+let lineChartInst=null, doughnutInst=null;
+
+function renderDash() {
+  const thisMonth = new Date().toISOString().slice(0,7);
+  const monthTx   = S.transactions.filter(t=>t.date.startsWith(thisMonth));
+  const income    = monthTx.filter(t=>t.type==='income').reduce((s,t)=>s+t.amount,0);
+  const expense   = monthTx.filter(t=>t.type==='expense').reduce((s,t)=>s+t.amount,0);
+  const savings   = monthTx.filter(t=>t.type==='savings').reduce((s,t)=>s+t.amount,0);
+  const totalBal  = S.wallets.reduce((s,w)=>s+w.balance,0);
+
+  document.getElementById('kpiBalance').textContent  = fmt(totalBal);
+  document.getElementById('kpiIncome').textContent   = fmt(income);
+  document.getElementById('kpiExpense').textContent  = fmt(expense);
+  document.getElementById('kpiIncomeSub').textContent  = monthTx.filter(t=>t.type==='income').length+' transaksi bulan ini';
+  document.getElementById('kpiExpenseSub').textContent = monthTx.filter(t=>t.type==='expense').length+' transaksi bulan ini';
+
+  // Line chart — pengeluaran per hari
+  const now=new Date(), y=now.getFullYear(), m=String(now.getMonth()+1).padStart(2,'0');
+  const days=[],dayExp=[];
+  for(let i=1;i<=now.getDate();i++){
+    const dd=String(i).padStart(2,'0'), iso=`${y}-${m}-${dd}`;
+    days.push(i);
+    dayExp.push(S.transactions.filter(t=>t.date===iso&&t.type==='expense').reduce((s,t)=>s+t.amount,0));
+  }
+  const lineCtx=document.getElementById('lineChart').getContext('2d');
+  if(lineChartInst) lineChartInst.destroy();
+  lineChartInst=new Chart(lineCtx,{
+    type:'line',
+    data:{labels:days,datasets:[{label:'Pengeluaran',data:dayExp,borderColor:'#f56464',backgroundColor:'rgba(245,100,100,.08)',tension:.4,fill:true,pointRadius:3,pointBackgroundColor:'#f56464'}]},
+    options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false}},
+      scales:{x:{grid:{color:'#1c1c1c'},ticks:{color:'#555',font:{size:10}}},
+              y:{grid:{color:'#1c1c1c'},ticks:{color:'#555',font:{size:10},callback:v=>v>=1e6?v/1e6+'jt':v>=1000?v/1000+'rb':v}}}}
+  });
+
+  // Doughnut — kategori pengeluaran
+  const catData={};
+  monthTx.filter(t=>t.type==='expense').forEach(t=>{catData[t.category]=(catData[t.category]||0)+t.amount;});
+  const catKeys=Object.keys(catData);
+  const dCtx=document.getElementById('doughnutChart').getContext('2d');
+  if(doughnutInst) doughnutInst.destroy();
+  if(catKeys.length===0){
+    document.getElementById('catBreakdown').innerHTML='<div class="empty" style="padding:8px 0;font-size:11px">Belum ada pengeluaran.</div>';
+  } else {
+    doughnutInst=new Chart(dCtx,{
+      type:'pie',
+      data:{labels:catKeys.map(k=>CAT_CONFIG[k]?.label||k),datasets:[{data:catKeys.map(k=>catData[k]),backgroundColor:catKeys.map(k=>CAT_CONFIG[k]?.color||'#888'),borderWidth:0,hoverOffset:4}]},
+      options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false}}}
+    });
+    const tot=Object.values(catData).reduce((s,v)=>s+v,0);
+    document.getElementById('catBreakdown').innerHTML=catKeys.map(k=>{
+      const pct=tot?Math.round(catData[k]/tot*100):0;
+      const cfg=CAT_CONFIG[k]||{color:'#888',icon:'📦'};
+      return `<div class="cat-row">
+        <div class="cat-dot" style="background:${cfg.color}"></div>
+        <div class="cat-name">${cfg.icon} ${cfg.label||k}</div>
+        <div class="cat-bar-wrap"><div class="cat-bar" style="width:${pct}%;background:${cfg.color}"></div></div>
+        <div class="cat-pct">${pct}%</div>
+      </div>`;
+    }).join('');
+  }
+
+  // Health Score
+  let score=50;
+  if(income>0){ const r=expense/income; score=r<.5?90:r<.7?70:r<.9?50:30; if(savings>0)score=Math.min(100,score+10); }
+  else if(expense>0) score=20;
+  const arc=document.getElementById('healthArc');
+  arc.setAttribute('stroke-dashoffset',314*(1-score/100));
+  arc.setAttribute('stroke',score>=70?'var(--green)':score>=50?'var(--accent)':'var(--red)');
+  document.getElementById('healthScore').textContent=score;
+  document.getElementById('healthLabel').textContent=score>=70?'Sehat 💪':score>=50?'Oke 👌':'Boros ⚠️';
+  document.getElementById('healthDesc').textContent=score>=70?'Keuangan kamu dalam kondisi baik!':score>=50?'Masih bisa lebih hemat.':'Pengeluaran terlalu tinggi!';
+
+  // Riwayat terbaru
+  const recent=[...S.transactions].reverse().slice(0,6);
+  document.getElementById('recentTx').innerHTML=recent.length
+    ?recent.map(t=>{
+        const cfg=CAT_CONFIG[t.category]||{icon:'📦',color:'#888'};
+        return `<div class="tx-item">
+          <div class="tx-ico" style="background:${cfg.color}22;color:${cfg.color}">${cfg.icon}</div>
+          <div class="tx-info">
+            <div class="tx-desc">${esc(t.description)}</div>
+            <div class="tx-meta">${t.time} · ${t.date}</div>
+          </div>
+          <div class="tx-amt" style="color:${t.type==='expense'?'var(--red)':t.type==='income'?'var(--green)':'var(--accent)'}">
+            ${t.type==='expense'?'−':'+'}${fmt(t.amount)}
+          </div>
+        </div>`;
+      }).join('')
+    :'<div class="empty">Belum ada transaksi.<br><span style="font-size:11px">Ketuk ikon chat di pojok kanan bawah untuk mencatat.</span></div>';
+}
+
+// ─── BUDGET ───────────────────────────────────────────────────────────────────
+function setBudgetMode(mode){
+  S.budgetMode=mode;save();
+  document.getElementById('bmFixed').classList.toggle('active',mode==='fixed');
+  document.getElementById('bm5030').classList.toggle('active',mode==='5030');
+  renderBudget();
+}
+function renderBudget(){
+  const thisMonth=new Date().toISOString().slice(0,7);
+  const monthExp=S.transactions.filter(t=>t.date.startsWith(thisMonth)&&t.type==='expense');
+  const monthInc=S.transactions.filter(t=>t.date.startsWith(thisMonth)&&t.type==='income').reduce((s,t)=>s+t.amount,0);
+  if(S.budgetMode==='5030'){
+    const needs=monthExp.filter(t=>['makan','tagihan','transport'].includes(t.category)).reduce((s,t)=>s+t.amount,0);
+    const wants=monthExp.filter(t=>['entertainment','belanja'].includes(t.category)).reduce((s,t)=>s+t.amount,0);
+    const savAmt=S.transactions.filter(t=>t.date.startsWith(thisMonth)&&t.type==='savings').reduce((s,t)=>s+t.amount,0);
+    const t50=monthInc*.5,t30=monthInc*.3,t20=monthInc*.2;
+    document.getElementById('budgetContent').innerHTML=`
+      <div style="font-size:11.5px;color:var(--dim);margin-bottom:4px">Pemasukan bulan ini: <strong style="color:var(--text)">${fmt(monthInc)}</strong></div>
+      <div class="budget-2030">
+        ${[{label:'Needs (50%)',color:'var(--blue)',val:needs,tgt:t50,pct:t50?Math.round(needs/t50*100):0},
+           {label:'Wants (30%)',color:'var(--orange)',val:wants,tgt:t30,pct:t30?Math.round(wants/t30*100):0},
+           {label:'Savings (20%)',color:'var(--accent)',val:savAmt,tgt:t20,pct:t20?Math.round(savAmt/t20*100):0}
+          ].map(c=>`<div class="b2030-card">
+            <div class="b2030-pct" style="color:${c.color}">${c.pct}%</div>
+            <div class="b2030-label">${c.label}</div>
+            <div class="b2030-prog"><div class="b2030-bar" style="width:${Math.min(c.pct,100)}%;background:${c.color}"></div></div>
+            <div class="b2030-info">${fmt(c.val)} / ${fmt(c.tgt)}</div>
+          </div>`).join('')}
+      </div>`;
+  } else {
+    const catSpend={};
+    monthExp.forEach(t=>{catSpend[t.category]=(catSpend[t.category]||0)+t.amount;});
+    if(Object.keys(S.budgets).length===0){
+      document.getElementById('budgetContent').innerHTML='<div class="empty">Belum ada budget.<br>Klik "+ Set Budget" untuk mulai!</div>';
+      return;
+    }
+    document.getElementById('budgetContent').innerHTML=Object.keys(S.budgets).map(k=>{
+      const cfg=CAT_CONFIG[k]||{icon:'📦',label:k,color:'#888'};
+      const spent=catSpend[k]||0,limit=S.budgets[k]||0;
+      const pct=limit?Math.min(Math.round(spent/limit*100),100):0;
+      const over=limit&&spent>limit;
+      return `<div class="budget-cat-item">
+        <div class="bc-top">
+          <div class="bc-left"><div class="bc-icon">${cfg.icon}</div><div class="bc-name">${cfg.label}</div></div>
+          <div class="bc-amounts">
+            <div class="bc-spent" style="color:${over?'var(--red)':'var(--text)'}">${fmt(spent)}</div>
+            <div class="bc-limit">dari ${fmt(limit)}</div>
+          </div>
+        </div>
+        <div class="bc-progress"><div class="bc-bar" style="width:${pct}%;background:${over?'var(--red)':cfg.color}"></div></div>
+        <div class="bc-pct">${pct}%${over?' — Over budget! ⚠️':''}</div>
+      </div>`;
+    }).join('');
+  }
+}
+function openBudgetEdit(){
+  document.getElementById('budgetModalContent').innerHTML=Object.keys(CAT_CONFIG).map(k=>`
+    <div class="form-group">
+      <div class="form-label">${CAT_CONFIG[k].icon} ${CAT_CONFIG[k].label}</div>
+      <input class="form-input" id="b_${k}" type="number" value="${S.budgets[k]||0}">
+    </div>`).join('');
+  document.getElementById('budgetModal').classList.add('show');
+}
+function saveBudget(){
+  Object.keys(CAT_CONFIG).forEach(k=>{
+    const el=document.getElementById('b_'+k);
+    if(el){const v=parseFloat(el.value);if(v>0)S.budgets[k]=v;else delete S.budgets[k];}
+  });
+  save();closeModal('budgetModal');renderBudget();
+}
+
+// ─── GOALS ────────────────────────────────────────────────────────────────────
+function renderGoals(){
+  const list=document.getElementById('goalsList');
+  if(!S.goals.length){list.innerHTML='<div class="empty">Belum ada target.<br>Tambah target pertama kamu!</div>';return;}
+  list.innerHTML=S.goals.map(g=>{
+    const pct=g.target?Math.min(Math.round(g.current/g.target*100),100):0;
+    const daysLeft=g.deadline?Math.ceil((new Date(g.deadline)-new Date())/864e5):null;
+    const color=pct>=100?'var(--green)':pct>=50?'var(--accent)':'var(--blue)';
+    return `<div class="goal-card">
+      <div class="goal-top">
+        <div class="goal-emoji">${g.emoji||'🎯'}</div>
+        <div class="goal-info">
+          <div class="goal-name">${esc(g.name)}</div>
+          <div class="goal-deadline">${daysLeft!==null?(daysLeft>0?daysLeft+' hari lagi':'Sudah lewat!'):'Tanpa deadline'}</div>
+        </div>
+        <div class="goal-pct-badge" style="color:${color}">${pct}%</div>
+      </div>
+      <div class="goal-prog"><div class="goal-bar" style="width:${pct}%;background:${color}"></div></div>
+      <div class="goal-amounts">
+        <span>Terkumpul: <strong>${fmt(g.current)}</strong></span>
+        <span>Target: <strong>${fmt(g.target)}</strong></span>
+      </div>
+    </div>`;
+  }).join('');
+}
+function openAddGoal(){document.getElementById('gDeadline').value='';document.getElementById('goalModal').classList.add('show');}
+function saveGoal(){
+  const name=document.getElementById('gName').value.trim();
+  const target=parseFloat(document.getElementById('gTarget').value)||0;
+  const current=parseFloat(document.getElementById('gCurrent').value)||0;
+  const deadline=document.getElementById('gDeadline').value;
+  const emoji=document.getElementById('gEmoji').value||'🎯';
+  if(!name||!target)return;
+  S.goals.push({id:uid(),name,target,current,deadline,emoji});
+  save();closeModal('goalModal');renderGoals();
+  ['gName','gTarget','gCurrent','gEmoji'].forEach(id=>document.getElementById(id).value='');
+}
+
+// ─── FLOATING CHAT ────────────────────────────────────────────────────────────
+let chatOpen=false;
+function toggleChat(){
+  chatOpen=!chatOpen;
+  document.getElementById('chatPopup').classList.toggle('open',chatOpen);
+  document.getElementById('chatFabBtn').innerHTML=chatOpen
+    ?`<svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#0a0a0a" stroke-width="2.2"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>`
+    :`<svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#0a0a0a" stroke-width="2"><path d="M21 15a2 2 0 01-2 2H7l-4 4V5a2 2 0 012-2h14a2 2 0 012 2z"/></svg>`;
+  if(chatOpen) setTimeout(()=>document.getElementById('chatInput').focus(),250);
+}
+
+function addUserMsg(text){
+  const a=document.getElementById('chatArea');
+  const d=document.createElement('div');d.className='msg user';
+  d.innerHTML=`<div class="msg-av">→</div><div class="msg-bub">${esc(text)}</div>`;
+  a.appendChild(d);a.scrollTop=a.scrollHeight;
+}
+function addAIMsg(text,typing=false){
+  const a=document.getElementById('chatArea');
+  const d=document.createElement('div');d.className='msg ai';d.id=typing?'typingMsg':'';
+  d.innerHTML=`<div class="msg-av">✦</div><div class="msg-bub">${typing?'<span class="typing-dot"></span><span class="typing-dot"></span><span class="typing-dot"></span>':esc(text)}</div>`;
+  a.appendChild(d);a.scrollTop=a.scrollHeight;return d;
+}
+function addAIFull(text,txData){
+  const a=document.getElementById('chatArea');
+  const d=document.createElement('div');d.className='msg ai';
+  let pill='';
+  if(txData){
+    const sign=txData.type==='expense'?'−':'+';
+    const cfg=CAT_CONFIG[txData.category]||{icon:'📦'};
+    pill=`<div class="tx-pill ${txData.type}">${cfg.icon} ${sign}${fmt(txData.amount)} · ${esc(txData.description)}</div>`;
+  }
+  d.innerHTML=`<div class="msg-av">✦</div><div class="msg-bub">${esc(text)}${pill}</div>`;
+  a.appendChild(d);a.scrollTop=a.scrollHeight;
+}
+function removeTypingMsg(){const t=document.getElementById('typingMsg');if(t)t.remove();}
+
+function sendMsg(){
+  const inp=document.getElementById('chatInput');
+  const text=inp.value.trim();
+  if(!text)return;
+  inp.value='';resizeTA(inp);
+  document.getElementById('sendBtn').disabled=true;
+  addUserMsg(text);
+  addAIMsg('',true);
+
+  setTimeout(()=>{
+    const tl=text.toLowerCase();
+    // Parse nominal
+    let am=tl.match(/(?:rp\s*)?(\d{1,3}(?:\.\d{3})*(?:,\d+)?|\d+(?:[.,]\d+)?)(?:\s*(ribu|rb|k|juta|jt|m))?/);
+    let amount=0;
+    if(am){
+      let raw=am[2]?parseFloat(am[1].replace(',','.')):parseFloat(am[1].replace(/\./g,'').replace(',','.'));
+      let mul=1;
+      if(am[2]){if(['ribu','rb','k'].includes(am[2]))mul=1000;else if(['juta','jt','m'].includes(am[2]))mul=1000000;}
+      amount=raw*mul;
+    }
+    removeTypingMsg();
+    if(amount>0){
+      if(!S.activeWallet&&S.wallets.length===0){
+        addAIMsg('Kamu belum punya dompet. Tambahkan dulu via tombol "+ Tambah Dompet" di sidebar ya!');
+        document.getElementById('sendBtn').disabled=false;return;
+      }
+      // Deteksi tipe
+      let type='expense';
+      if(/(gaji|dikasih|terima|bonus|jual|pemasukan|income|dapat|masuk)/.test(tl))type='income';
+      else if(/(nabung|simpan|tabung|saving)/.test(tl))type='savings';
+      // Deteksi kategori
+      let cat='lainnya';
+      if(/(makan|minum|jajan|kopi|soto|nasi|food|resto|warung|cafe)/.test(tl))cat='makan';
+      else if(/(gojek|grab|bensin|parkir|tol|kereta|bus|transport|ojek|motor)/.test(tl))cat='transport';
+      else if(/(belanja|baju|sepatu|shopee|tokopedia|beli)/.test(tl))cat='belanja';
+      else if(/(nonton|bioskop|game|main|netflix|hiburan|spotify)/.test(tl))cat='entertainment';
+      else if(/(listrik|air|internet|wifi|kos|cicilan|tagihan|bayar)/.test(tl))cat='tagihan';
+
+      const tx=addTx(type,amount,text,cat,S.activeWallet);
+      const typeLabel=type==='income'?'pemasukan':type==='savings'?'tabungan':'pengeluaran';
+      addAIFull(`Dicatat sebagai ${typeLabel}! Dashboard sudah diupdate ✓`,tx);
+    } else {
+      addAIMsg('Aku gak nemu nominalnya. Coba sebutkan angkanya ya! Contoh: "Beli makan 35rb" atau "Gajian 5 juta"');
+    }
+    document.getElementById('sendBtn').disabled=false;
+  },600);
+}
+
+function handleKey(e){if(e.key==='Enter'&&!e.shiftKey){e.preventDefault();sendMsg();}}
+function resizeTA(el){el.style.height='auto';el.style.height=Math.min(el.scrollHeight,80)+'px';}
+function useChip(el){
+  document.getElementById('chatInput').value=el.textContent;
+  if(!chatOpen)toggleChat();
+  setTimeout(sendMsg,100);
+}
+
+// ─── MISC ─────────────────────────────────────────────────────────────────────
+function confirmReset(){
+  if(!confirm('Reset semua data? Tidak bisa dibatalkan.'))return;
+  localStorage.removeItem(STORAGE_KEY);S=defaultState();save();
+  renderAll();document.getElementById('chatArea').innerHTML='';initWelcome();
+}
+
+function initWelcome(){
+  const a=document.getElementById('chatArea');a.innerHTML='';
+  const d=document.createElement('div');d.className='msg ai';
+  d.innerHTML=`<div class="msg-av">✦</div>
+    <div class="msg-bub">
+      <p>Halo! Ketik transaksi kamu di sini 💰</p>
+      <p style="margin-top:4px;color:#555;font-size:11.5px">"Beli makan 35rb" · "Gajian 5 juta" · "Nabung 300rb"</p>
+    </div>`;
+  a.appendChild(d);
+}
+
+// ─── MIGRASI DATA LAMA ────────────────────────────────────────────────────────
+(function migrateOldWallets(){
+  let migrated=false;
+  S.wallets.forEach(w=>{
+    if(w.balance>0){
+      const hasInit=S.transactions.some(t=>t.walletId===w.id&&t.description&&t.description.startsWith('Saldo awal'));
+      if(!hasInit){
+        const txBal=S.transactions.filter(t=>t.walletId===w.id).reduce((s,t)=>{
+          if(t.type==='income')return s+t.amount;
+          if(t.type==='expense'||t.type==='savings')return s-t.amount;
+          return s;
+        },0);
+        const unrecorded=w.balance-txBal;
+        if(unrecorded>0){
+          S.transactions.unshift({id:uid(),type:'income',amount:unrecorded,description:'Saldo awal — '+w.name,category:'lainnya',walletId:w.id,date:todayISO(),time:'00:00'});
+          migrated=true;
+        }
+      }
+    }
+  });
+  if(migrated)save();
+})();
+
+// ─── INIT ─────────────────────────────────────────────────────────────────────
+initWelcome();
+renderAll();
+setTab('dash');
+</script>
+</body>
+</html>
