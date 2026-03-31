@@ -610,13 +610,11 @@ function save() { localStorage.setItem(STORAGE_KEY, JSON.stringify(S)); }
 
 // ─── UTILS ───────────────────────────────────────────────────────────────────
 function fmt(n) {
-  n = Math.round(n);
-  if (Math.abs(n) >= 1e9) return 'Rp '+(n/1e9).toFixed(1)+'M';
-  if (Math.abs(n) >= 1e6) return 'Rp '+(n/1e6).toFixed(1)+'jt';
-  return 'Rp '+Math.abs(n).toLocaleString('id-ID');
+  const abs = Math.abs(Math.round(n));
+  return 'Rp ' + abs.toLocaleString('id-ID');
 }
 function fmtFull(n) {
-  return 'Rp '+Math.abs(Math.round(n)).toLocaleString('id-ID');
+  return fmt(n);
 }
 function nowStr() { return new Date().toLocaleTimeString('id-ID',{hour:'2-digit',minute:'2-digit'}); }
 function todayISO() { return new Date().toISOString().slice(0,10); }
